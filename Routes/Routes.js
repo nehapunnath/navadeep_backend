@@ -6,10 +6,8 @@ const { verifyToken, requireAdmin } = require('../Middleware/authMiddleware');
 const EventController = require('../Controller/EventController');
 const {upload ,uploadToFirebase}= require('../Middleware/MulterMiddleware');
 
-// Public routes
 router.post('/login', AuthController.login);
 
-// Event routes - Using same pattern as your working example
 router.post('/admin/events', upload.array('images', 3),uploadToFirebase,  EventController.addEvent);
 router.put('/admin/events/:id',  upload.array('images', 3),uploadToFirebase,  EventController.updateEvent);
 router.post('/admin/upcoming', EventController.addUpcomingEvent);
