@@ -1,29 +1,28 @@
-// middleware/authMiddleware.js
-const AuthModel = require('../Model/AuthModel');
+// Middleware/authMiddleware.js
+const { admin } = require('../Config/firebaseAdmin');
 
-const verifyToken = async (req, res, next) => {
+const requireAdmin = async (req, res, next) => {
   const authHeader = req.headers.authorization;
   if (!authHeader?.startsWith('Bearer ')) {
-    return res.status(401).json({ success: false, error: 'No token provided' });
+    return res.status(401).json({ error: "No token provided" });
   }
 
   const token = authHeader.split('Bearer ')[1];
 
-  const result = await AuthModel.verifyToken(token);
-  if (!result.success) {
-    return res.status(401).json({ success: false, error: 'Session expired. Please login again.' });
-  }
+  try {
+    const decodedToken = await admin.auth().verifyIdToken(token);
+    req.user = decodedToken;
 
-  req.user = result.decodedToken;
-  req.isAdmin = await AuthModel.isAdmin(req.user.uid);
-  next();
+    // Check if user is admin (you must set this in custom claims!)
+    if (!decodedToken.isAdmin) {
+      return res.status(403).json({ error: "Admin access required" });
+    }
+
+    next();
+  } catch (error) {
+    console.error("Token verification failed:", error);
+    res.status(401).json({ error: "Invalid or expired token" });
+  }
 };
 
-const requireAdmin = async (req, res, next) => {
-  if (!req.isAdmin) {
-    return res.status(403).json({ success: false, error: 'Admin access required' });
-  }
-  next();
-};
-
-module.exports = { verifyToken, requireAdmin };
+module.exports = { requireAdmin };
