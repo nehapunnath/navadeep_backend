@@ -26,18 +26,33 @@ const addEvent = async (req, res) => {
 };
 
 // Update Existing Event (same function, uses req.params.id)
+// Controller/EventController.js - FIXED updateEvent
 const updateEvent = async (req, res) => {
   try {
     const { title, date, description } = req.body;
-   const images = req.files 
-      ? req.files.map(file => file.firebaseUrl).filter(Boolean)
-      : [];
 
     if (!title || !date || !description) {
       return res.status(400).json({ error: 'Title, date, and description are required' });
     }
 
-    const eventData = { title, date, description, images };
+    // Get existing event first to preserve old images if no new ones uploaded
+    const existingSnapshot = await EventModel.eventsRef.child(req.params.id).once('value');
+    const existingEvent = existingSnapshot.val();
+
+    const newImages = req.files 
+      ? req.files.map(file => file.firebaseUrl).filter(Boolean)
+      : [];
+
+    // Merge: keep old images + add new ones (or replace if you want to fully replace)
+    const updatedImages = newImages.length > 0 ? newImages : (existingEvent?.images || []);
+
+    const eventData = { 
+      title, 
+      date, 
+      description, 
+      images: updatedImages 
+    };
+
     const updatedEvent = await EventModel.updateEvent(req.params.id, eventData);
 
     res.json(updatedEvent);
