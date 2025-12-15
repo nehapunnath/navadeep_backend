@@ -31,3 +31,4 @@ router.put('/admin/gallery/:id', upload.single('image'), uploadToFirebase, Galle
 router.delete('/admin/gallery/:id', GalleryController.deleteGallery);
 
 module.exports = router;
+
